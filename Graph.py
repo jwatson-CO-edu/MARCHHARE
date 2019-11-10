@@ -30,9 +30,11 @@ class TaggedObject( object ):
     
     def __init__( self ):
         """ The simplest means to give each object a unique tag """ # NOTE: No need for a global lookup at this time
+        _DEBUG = 1
         self.desc = self.__class__.__name__ # Shorten name access
         self.tag = self.desc + str( id( self ) ) # Create a tag composed of the class name and memory id
         self.alias = "" # Init alias to the empty string
+        if _DEBUG: print( "Created:" , self.tag )
         
     def __str__( self ):
         """ String representation , by class and then by alias ( or tag if alias is not available ) """
