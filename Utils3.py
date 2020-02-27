@@ -128,7 +128,7 @@ def get_tokenizer_with_char( separator = ',' ,  evalFunc = str ):
         return [ evalFunc( rawToken ) for rawToken in rawStr.split( separator ) ]
     return rtnFunc
 
-def strip_EXT( fName ):
+cd Cppdef strip_EXT( fName ):
     """ Return the filepath before the extension """
     return os.path.splitext( fName )[0]
 
@@ -167,6 +167,14 @@ def unpickle_dict( filename ):
             return {}
     except IOError:
         return {}
+
+def ensure_dir( dirName ):
+    """ Create the directory if it does not exist """
+    if not os.path.exists( dirName ):
+        try:
+            os.makedirs( dirName )
+        except Exception as err:
+            print( "ensure_dir: Could not create" , dirName , '\n' , err )
 
 def ensure_dirs_writable( *dirList ):
     """ Return true if every directory argument both exists and is writable, otherwise return false """
