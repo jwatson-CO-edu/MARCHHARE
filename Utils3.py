@@ -240,47 +240,6 @@ class PriorityQueue( list ): # Requires heapq
         """ Replace the priority of the element at 'index' with 'priority' """
         temp = list.pop( self , index ) # Remove the item at the former priority
         self.push( temp[-1] , priority ) # Push with new priority , this item should have the same hashable lookup
-
-class Counter( dict ): 
-    """ The counter object acts as a dict, but sets previously unused keys to 0 , in the style of 6300 """
-    # TODO: Add Berkeley / 6300 functionality
-
-    def __init__( self , *args , **kw ):
-        """ Standard dict init """
-        dict.__init__( self , *args , **kw )
-        if "default" in kw:
-            self.defaultReturn = kw['default']
-        else:
-            self.defaultReturn = 0
-
-    def set_default( self , val ):
-        """ Set a new default value to return when there is no """
-        self.defaultReturn = val
-
-    def __getitem__( self , a ):
-        """ Get the val with key , otherwise return 0 if key DNE """
-        if a in self: 
-            return dict.__getitem__( self , a )
-        return 0
-
-    # __setitem__ provided by 'dict'
-
-    def sorted_keyVals( self ):
-        """ Return a list of sorted key-value tuples """
-        sortedItems = self.items()
-        sortedItems.sort( cmp = lambda keyVal1 , keyVal2 :  np.sign( keyVal2[1] - keyVal1[1] ) )
-        return sortedItems
-
-    def sample_until_unique( self , sampleFromSeq , sampleLim = int( 1e6 ) ):
-        """ Sample randomly from 'sampleFromSeq' with a uniform distribution until a new key is found or the trial limit is reached , return it """
-        # NOTE: If 'sampleLim' is set to 'infty' , the result may be an infinite loop if the Counter has a key for each 'sampleFromSeq'
-        trial = 1
-        while( trial <= sampleLim ):
-            testKey = choice( sampleFromSeq )
-            if self[ testKey ] == 0:
-                return testKey
-            trial += 1
-        return None
     
 class Stack(list): 
     """ LIFO container based on 'list' """    
@@ -368,6 +327,56 @@ def elemw( iterable , i ):
         return iterable[ seqLen - revDex ]
 
 # ___ END ITERABLE ___________________________________________________________________________________________________________________
+
+
+# === Hash/Dict Structures =============================================================================================
+
+def assoc_lists( keys , values ):
+    """ Return a dictionary with associated 'keys' and 'values' """
+    return dict( zip( keys , values ) )
+    
+class Counter( dict ): 
+    """ The counter object acts as a dict, but sets previously unused keys to 0 , in the style of 6300 """
+    # TODO: Add Berkeley / 6300 functionality
+
+    def __init__( self , *args , **kw ):
+        """ Standard dict init """
+        dict.__init__( self , *args , **kw )
+        if "default" in kw:
+            self.defaultReturn = kw['default']
+        else:
+            self.defaultReturn = 0
+
+    def set_default( self , val ):
+        """ Set a new default value to return when there is no """
+        self.defaultReturn = val
+
+    def __getitem__( self , a ):
+        """ Get the val with key , otherwise return 0 if key DNE """
+        if a in self: 
+            return dict.__getitem__( self , a )
+        return 0
+
+    # __setitem__ provided by 'dict'
+
+    def sorted_keyVals( self ):
+        """ Return a list of sorted key-value tuples """
+        sortedItems = self.items()
+        sortedItems.sort( cmp = lambda keyVal1 , keyVal2 :  np.sign( keyVal2[1] - keyVal1[1] ) )
+        return sortedItems
+
+    def sample_until_unique( self , sampleFromSeq , sampleLim = int( 1e6 ) ):
+        """ Sample randomly from 'sampleFromSeq' with a uniform distribution until a new key is found or the trial limit is reached , return it """
+        # NOTE: If 'sampleLim' set to 'infty' , the result may be an infinite loop if the Counter has a key for each 'sampleFromSeq'
+        trial = 1
+        while( trial <= sampleLim ):
+            testKey = choice( sampleFromSeq )
+            if self[ testKey ] == 0:
+                return testKey
+            trial += 1
+        return None
+
+# ___ End Hash/Dict ____________________________________________________________________________________________________
 
 
 # === Timing / Benchmarking ============================================================================================
