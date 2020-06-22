@@ -90,6 +90,81 @@ nowTimeStamp = lambda: datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') # h
 nowTimeStampFine = lambda: datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f') # http://stackoverflow.com/a/5215012/893511
 """ Return a formatted timestamp string, useful for logging and debugging """
 
+def lists_as_columns_with_titles( lists , titles = [] , padSpaces = 4 , output = 0 ):
+    """ Return a string with each of the 'lists' as columns with the appropriate 'titles' """
+    longestList = 0
+    longestItem = 0
+    prntLists   = []
+    pad         = padSpaces * ' '
+    rtnStr      = ""
+    
+    assert ( len( titles ) == len( lists ) ) or ( len( titles ) == 0 ) ,
+           "Titles " + str( len( titles ) ) + " and lists " + str( len( lists ) ) + " of unequal length."
+    
+    titleOut = len( titles )
+    
+    if titleOut:
+        for title in titles:
+            if len( title ) > longestItem:
+                longestList = len( title )
+    
+    for lst in lists:
+        if len( lst ) > longestItem:
+            longestList = len( lst )
+        prntLists.append( [] )
+        for item in lst:
+            strItem = str( item )
+            prntLists[-1].append( strItem )
+            if len( strItem ) > longestItem:
+                longestItem = len( strItem )
+    if titleOut:
+        line = ''
+        for title in titles:
+            line += title[ : len( pad ) + longestItem -1 ].rjust( len( pad ) + longestItem , ' ' )
+        if output:  print( line )
+        rtnStr += line + endl
+    for index in range( longestList ):
+        line = ''
+        for lst in prntLists:
+            if index < len( lst ):
+                line += pad + lst[ index ].ljust( longestItem , ' ' )
+            else:
+                line += pad + longestItem * ' '
+        if output:  print( line )
+        rtnStr += line + endl
+    return rtnStr
+
+def levenshteinDistance( str1 , str2 ):
+    """ Compute the edit distance between strings , Return:
+        'ldist': Number of edits between the strings 
+        'ratio': Number of edits over the sum of the lengths of 'str1' and 'str2' """
+    # URL , Levenshtein Distance: https://rosettacode.org/wiki/Levenshtein_distance#Python
+    m = len( str1 )
+    n = len( str2 )
+    lensum = float( m + n )
+    d = []           
+    for i in range( m + 1 ):
+        d.append( [i] )        
+    del d[0][0]    
+    for j in range( n + 1 ):
+        d[0].append(j)       
+    for j in range( 1 , n+1 ):
+        for i in range( 1 , m+1 ):
+            if str1[ i-1 ] == str2[ j-1 ]:
+                d[i].insert( j , d[ i-1 ][ j-1 ] )           
+            else:
+                minimum = min( d[ i-1 ][ j ] + 1   , 
+                               d[ i ][ j-1 ] + 1   , 
+                               d[ i-1 ][ j-1 ] + 2 )
+                d[i].insert( j , minimum )
+    ldist = d[-1][-1] 
+    ratio = ( lensum - ldist ) / lensum
+    return { 'distance' : ldist , 'ratio' : ratio }
+
+def levenshtein_diff_score( keyWord , compareWord ):
+    """ Return a difference score that is edit distance over `keyWord` length """
+    return 1.0 * levenshteinDistance( keyWord , compareWord )['distance'] / len( keyWord )
+
 # ___ END STRING _____________________________________________________________________________________________________________________
 
 
@@ -268,24 +343,37 @@ class RollingList( list ):
     def __init__( self , winLen , *args ):
         """ Normal 'list' init """
         list.__init__( self , [ 0 for i in range( winLen ) ] , *args )
+        self.limit = winLen
+
+    def trim_front( self ):
+        """ Drop leading elements until the length condition is met """
+        while len( self ) > self.limit:
+            del self[0]
+
+    def trim_back( self ):
+        """ Drop trailing elements until the length condition is met """
+        while len( self ) > self.limit:
+            del self[-1]
 
     def append( self , item ):
         """ Append an item to the back of the list """
         list.append( self , item )
-        del self[0]
+        self.trim_front()
 
     def prepend( self , item ):
         """ Prepend an item to the front of the list """
         self.insert( 0 , item )
-        del self[-1]
+        self.trim_back()
+
+    def extend( self , addedList ):
+        """ Extend the list and enforce limits """
+        list.extend( self , addedList )
+        self.trim_front()
 
     def get_average( self ):
-        """ Get the rolling average , NOTE: Calling this function after inserting non-numeric or non-scalar elements will result in an error """
+        """ Get the rolling average """
+        # NOTE: Calling this function after inserting non-numeric or non-scalar elements will result in an error
         return sum( self ) * 1.0 / len( self )
-
-    def item_list( self ):
-        """ Return a copy of the RollingList as a list """
-        return self[:]   
 
 # ___ END CONTAINER CLASS ____________________________________________________________________________________________________________
 
@@ -384,46 +472,6 @@ class Counter( dict ):
 # ___ End Hash/Dict ____________________________________________________________________________________________________
 
 
-# === Timing / Benchmarking ============================================================================================
-
-class HeartRate: # NOTE: This fulfills a purpose similar to the rospy rate
-    """ Sleeps for a time such that the period between calls to sleep results in a frequency not greater than the specified 'Hz' """
-    
-    def __init__( self , Hz ):
-        """ Create a rate object with a Do-Not-Exceed frequency in 'Hz' """
-        self.period = 1.0 / Hz; # Set the period as the inverse of the frequency , hearbeat will not exceed 'Hz' , but can be lower
-        self.last = time.time()
-    
-    def sleep( self ):
-        """ Sleep for a time so that the frequency is not exceeded """
-        elapsed = time.time() - self.last
-        if elapsed < self.period:
-            time.sleep( self.period - elapsed )
-        self.last = time.time()
-
-class Stopwatch( object ):
-    """ Timer for benchmarking """
-
-    def __init__( self ):
-        """ Init with watch started """
-        self.strtTime = time.time()
-        self.stopTime = infty
-
-    def start( self ):
-        self.strtTime = time.time()
-
-    def stop( self ):
-        self.stopTime = time.time()
-
-    def duration( self ):
-        return self.stopTime - self.strtTime
-
-    def elapsed( self ):
-        return time.time() - self.strtTime    
-
-# ___ End Timing ___________________________________________________________________________________________________________________________
-
-
 # === System Helpers ===================================================================================================
 
 def confirm_or_crash( msg = "Text to Crash, Empty to Continue: " ):
@@ -474,6 +522,51 @@ class LogMH:
         self.totalStr = ""
 
 # _ End LogMH _
+
+def parse_args( argList ):
+    """ Parse a dictionary of terminal parameters and their arguments """
+    # NOTE: This function assumes that each terminal parameter begins with a dash "-param"
+    # NOTE: This function assumes that a terminal argument follows the parameter that it must be assigned to,
+    #       and that no parameters begin with a dash
+    
+    def parse_arg( arg ):
+        """ Attempt to parse the argument as a float, int, or string; in that order """
+        rtnVal = None
+        try:
+            rtnVal = int( arg )
+        except ValueError:
+            try:
+                rtnVal = float( arg )
+            except ValueError:
+                rtnVal = str( arg )
+        return rtnVal
+    
+    stashedParam = ''
+    argLookup    = {}
+    argLen       = len( argList )
+    # 1. For each item
+    for i , arg_i in enumerate( argList ):
+        # 2. If it is a parameter
+        if arg_i[0] == '-':
+            # 3. If there is a previously stashed parameter, then assign it the value of `True` -OR-
+            if stashedParam:
+                argLookup[ stashedParam ] = True
+            # 4. If we are at the end of the list, then assign the current parameter the value of `True`
+            if i+1 == argLen:
+                argLookup[ arg_i  ] = True
+            # 5. Stash the current parameter name
+            stashedParam = arg_i
+        # 6. Else it is an argument
+        else:
+            # 7. If there is a parameter stashed, then parse it and assign the argument to the parameter
+            if stashedParam:
+                argLookup[ stashedParam ] = parse_arg( arg_i )
+                stashedParam = ''
+            # 8. Else, ignore the argument
+            else:
+                pass
+    # 9. Return
+    return argLookup
 
 # ___ End System _______________________________________________________________________________________________________
 

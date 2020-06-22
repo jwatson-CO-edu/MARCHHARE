@@ -100,6 +100,11 @@ def strip_EXT( fName ):
     """ Return the filepath before the extension """
     return os.path.splitext( fName )[0]
 
+def get_EXT( fName , CAPS = 1 ):
+    """ Return the filepath before the extension """
+    ext = os.path.splitext( fName )[1][1:]
+    return ( ext.upper() if CAPS else ext )
+
 def struct_to_pkl( struct , pklPath ): 
     """ Serialize a 'struct' to 'pklPath' """
     f = open( pklPath , 'wb') # open a file for binary writing to receive pickled data
@@ -136,13 +141,16 @@ def unpickle_dict( filename ):
     except IOError:
         return {}
 
-def ensure_dir( dirName ):
+def ensure_dir( dirName , gracefulErr = 1 ):
     """ Create the directory if it does not exist """
     if not os.path.exists( dirName ):
         try:
             os.makedirs( dirName )
         except Exception as err:
-            print( "ensure_dir: Could not create" , dirName , '\n' , err )
+            if gracefulErr:
+                print( "ensure_dir: Could not create" , dirName , '\n' , err )
+            else:
+                raise IOError( "ensure_dir: Could not create" + str( dirName ) + '\n' + str( err ) )
 
 def ensure_dirs_writable( *dirList ):
     """ Return true if every directory argument both exists and is writable, otherwise return false """
@@ -151,5 +159,28 @@ def ensure_dirs_writable( *dirList ):
     for directory in dirList:
         ensure_dir( directory )
     return validate_dirs_writable( *dirList )
+
+def flatten_dir_files( rootDir , _VRB = 0 ):
+    """ Move all files to the top of `rootDir`, Then delete all subfolders """
+    # 1. Walk the entire directory from root to leaf
+    for ( dirpath , dirs , files ) in os.walk( rootDir , topdown = False ):
+        # 2. For each file
+        for filename in files:
+            # 3. Consruct full paths
+            fPath = os.path.join( dirpath , filename )
+            dPath = os.path.join( rootDir , filename )
+            # 4. If the file exists, then move it
+            if os.path.isfile( fPath ):
+                try:
+                    if _VRB: print( "Moving" , fPath , "--to->\n\t" , dPath )
+                    os.rename( fPath , dPath )
+                    if _VRB: print( "\tSuccess!" )
+                except:
+                    if _VRB: print( "\tFailure!" )
+        try:
+            os.rmdir( dirpath )
+            if _VRB: print( "\t\tRemoved" , dirpath )
+        except OSError as ex:
+            if _VRB: print( "\t\tAttempted to remove" , dirpath , "but:" , ex )
 
 # ___ END FILE _____________________________________________________________________________________________________________________________
