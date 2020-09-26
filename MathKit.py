@@ -14,7 +14,7 @@ Math helper functions including: { trigonometry , statistics }
 # ~~ Imports ~~
 # ~ Standard ~
 import os , operator
-from random import random
+from random import random, choices, shuffle
 from math import sqrt , sin , cos , tan , atan2 , asin , acos , atan , degrees , radians , factorial , pi , modf
 # ~ Special ~
 import numpy as np
@@ -303,6 +303,15 @@ def sample_unfrm_real( rMin , rMax ):
     """ Sample from a uniform distribution [ rMin , rMax ) """
     span = abs( rMax - rMin )
     return random() * span + rMin
+
+def draw_choices( lst , k = 1 , replace = 0 ):
+    """ Draw `k` samples from `lst`, with or without replacement """
+    cpy = lst[:]
+    if not replace:
+        shuffle( cpy )
+        return cpy[:k]
+    else:
+        return choices( lst , k = k )
 
 # _ End Rolls _
 
