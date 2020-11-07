@@ -5,7 +5,7 @@
 """
 Utils3.py
 James Watson, 2019 April
-[M]odule [ARCH]ive for a [H]obby and [R]esearch [E]nvironment
+[M]odule [ARCH]ive for a [H]obby [A]nd [R]esearch [E]nvironment
 Helper functions
 NOTE: This file is the 3.6 replacement for the 2.7 "marchhare.py"
 """
@@ -52,85 +52,6 @@ def test_constants():
 # ___ END PATH & ENV _________________________________________________________________________________________________________________
 
 
-# === FILE OPERATIONS ======================================================================================================================
-
-def lines_from_file( fPath ): 
-    """ Open the file at 'fPath' , and return lines as a list of strings """
-    with open( fPath , 'r' ) as f:
-        lines = f.readlines()
-    return lines
-
-def strip_endlines_from_lines( lines ):
-    """ Remove the endlines from a list of lines read from a file """
-    rtnLines = []
-    for line in lines:
-        currLine = ''
-        for char in line:
-            if char != '\n' and char != '\r':
-                currLine += char
-        rtnLines.append( currLine )
-    return rtnLines
-
-def strip_comments_from_lines( lines ):
-    """ Remove everything after each # """
-    # NOTE: This function does not take into account a '#' within a string
-    rtnLines = []
-    for line in lines:
-        rtnLines.append( str( line.split( '#' , 1 )[0] ) )
-    return rtnLines
-
-def purge_empty_lines( lines ):
-    """ Given a list of lines , Remove all lines that are only whitespace """
-    rtnLines = []
-    for line in lines:
-        if ( not line.isspace() ) and ( len( line ) > 0 ):
-            rtnLines.append( line )
-    return rtnLines
-
-def parse_lines( fPath , parseFunc ):
-    """ Parse lines with 'parseFunc' while ignoring Python-style # comments """
-    # NOTE: This function does not take into account a '#' within a string
-    rtnExprs = []
-    # 1. Fetch all the lines
-    lines = lines_from_file( fPath )
-    # 2. Scrub comments from lines
-    lines = strip_comments_from_lines( lines )
-    # 3. Purge empty lines
-    lines = purge_empty_lines( lines )
-    # 3.5. Remove newlines
-    lines = strip_endlines_from_lines( lines )
-    # 4. For each of the remaining lines , Run the parse function and save the results
-    for line in lines:
-        rtnExprs.append( parseFunc( line ) )
-    # 5. Return expressions that are the results of processing the lines
-    return rtnExprs
-
-def parse_lines_into_columns( fPath , parseFunc ):
-    """ Parse lines with 'parseFunc' into equal-length columns of data, while ignoring Python-style # comments """
-    prsdExprs = parse_lines( fPath , parseFunc )
-    numCols   = len( prsdExprs[0] )
-    rntCols   = [ [] for i in range( numCols ) ]
-    for expr in prsdExprs:
-        if len( expr ) != numCols:
-            print( "WARNING: " )
-            return rntCols
-        for j in range( numCols ):
-            rntCols[j].append( expr[j] )
-    return rntCols
-        
-def tokenize_with_char( rawStr , separator = ',' ,  evalFunc = str ): 
-    """ Return a list of tokens taken from 'rawStr' that is partitioned with a separating character, transforming each token with 'evalFunc' """
-    return [ evalFunc( rawToken ) for rawToken in rawStr.split( separator ) ]
-
-def get_tokenizer_with_char( separator = ',' ,  evalFunc = str ):
-    """ Return a function that returns a list of tokens from 'rawStr' that is split on separating character, transforming each token with 'evalFunc' """
-    def rtnFunc( rawStr ):
-        return [ evalFunc( rawToken ) for rawToken in rawStr.split( separator ) ]
-    return rtnFunc
-
-# ___ END FILE _____________________________________________________________________________________________________________________________
-
-
 # === STRING OPERATIONS ==============================================================================================================
 
 def format_dec_list( numList , places = 2 ): 
@@ -158,6 +79,91 @@ def pretty_list( pList ):
         else:
             prnStr += str( elem ) + " ]"
     return prnStr
+
+def yesno( pBool ):
+    """ Return YES if True, Otherwise return NO """
+    return ( "YES" if pBool else "NO" )
+
+nowTimeStamp = lambda: datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S') # http://stackoverflow.com/a/5215012/893511
+""" Return a formatted timestamp string, useful for logging and debugging """
+
+nowTimeStampFine = lambda: datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f') # http://stackoverflow.com/a/5215012/893511
+""" Return a formatted timestamp string, useful for logging and debugging """
+
+def lists_as_columns_with_titles( lists , titles = [] , padSpaces = 4 , output = 0 ):
+    """ Return a string with each of the 'lists' as columns with the appropriate 'titles' """
+    longestList = 0
+    longestItem = 0
+    prntLists   = []
+    pad         = padSpaces * ' '
+    rtnStr      = ""
+    
+    assert ( len( titles ) == len( lists ) ) or ( len( titles ) == 0 ) ,
+           "Titles " + str( len( titles ) ) + " and lists " + str( len( lists ) ) + " of unequal length."
+    
+    titleOut = len( titles )
+    
+    if titleOut:
+        for title in titles:
+            if len( title ) > longestItem:
+                longestList = len( title )
+    
+    for lst in lists:
+        if len( lst ) > longestItem:
+            longestList = len( lst )
+        prntLists.append( [] )
+        for item in lst:
+            strItem = str( item )
+            prntLists[-1].append( strItem )
+            if len( strItem ) > longestItem:
+                longestItem = len( strItem )
+    if titleOut:
+        line = ''
+        for title in titles:
+            line += title[ : len( pad ) + longestItem -1 ].rjust( len( pad ) + longestItem , ' ' )
+        if output:  print( line )
+        rtnStr += line + endl
+    for index in range( longestList ):
+        line = ''
+        for lst in prntLists:
+            if index < len( lst ):
+                line += pad + lst[ index ].ljust( longestItem , ' ' )
+            else:
+                line += pad + longestItem * ' '
+        if output:  print( line )
+        rtnStr += line + endl
+    return rtnStr
+
+def levenshteinDistance( str1 , str2 ):
+    """ Compute the edit distance between strings , Return:
+        'ldist': Number of edits between the strings 
+        'ratio': Number of edits over the sum of the lengths of 'str1' and 'str2' """
+    # URL , Levenshtein Distance: https://rosettacode.org/wiki/Levenshtein_distance#Python
+    m = len( str1 )
+    n = len( str2 )
+    lensum = float( m + n )
+    d = []           
+    for i in range( m + 1 ):
+        d.append( [i] )        
+    del d[0][0]    
+    for j in range( n + 1 ):
+        d[0].append(j)       
+    for j in range( 1 , n+1 ):
+        for i in range( 1 , m+1 ):
+            if str1[ i-1 ] == str2[ j-1 ]:
+                d[i].insert( j , d[ i-1 ][ j-1 ] )           
+            else:
+                minimum = min( d[ i-1 ][ j ] + 1   , 
+                               d[ i ][ j-1 ] + 1   , 
+                               d[ i-1 ][ j-1 ] + 2 )
+                d[i].insert( j , minimum )
+    ldist = d[-1][-1] 
+    ratio = ( lensum - ldist ) / lensum
+    return { 'distance' : ldist , 'ratio' : ratio }
+
+def levenshtein_diff_score( keyWord , compareWord ):
+    """ Return a difference score that is edit distance over `keyWord` length """
+    return 1.0 * levenshteinDistance( keyWord , compareWord )['distance'] / len( keyWord )
 
 # ___ END STRING _____________________________________________________________________________________________________________________
 
@@ -309,47 +315,6 @@ class PriorityQueue( list ): # Requires heapq
         """ Replace the priority of the element at 'index' with 'priority' """
         temp = list.pop( self , index ) # Remove the item at the former priority
         self.push( temp[-1] , priority ) # Push with new priority , this item should have the same hashable lookup
-
-class Counter( dict ): 
-    """ The counter object acts as a dict, but sets previously unused keys to 0 , in the style of 6300 """
-    # TODO: Add Berkeley / 6300 functionality
-
-    def __init__( self , *args , **kw ):
-        """ Standard dict init """
-        dict.__init__( self , *args , **kw )
-        if "default" in kw:
-            self.defaultReturn = kw['default']
-        else:
-            self.defaultReturn = 0
-
-    def set_default( self , val ):
-        """ Set a new default value to return when there is no """
-        self.defaultReturn = val
-
-    def __getitem__( self , a ):
-        """ Get the val with key , otherwise return 0 if key DNE """
-        if a in self: 
-            return dict.__getitem__( self , a )
-        return 0
-
-    # __setitem__ provided by 'dict'
-
-    def sorted_keyVals( self ):
-        """ Return a list of sorted key-value tuples """
-        sortedItems = self.items()
-        sortedItems.sort( cmp = lambda keyVal1 , keyVal2 :  np.sign( keyVal2[1] - keyVal1[1] ) )
-        return sortedItems
-
-    def sample_until_unique( self , sampleFromSeq , sampleLim = int( 1e6 ) ):
-        """ Sample randomly from 'sampleFromSeq' with a uniform distribution until a new key is found or the trial limit is reached , return it """
-        # NOTE: If 'sampleLim' is set to 'infty' , the result may be an infinite loop if the Counter has a key for each 'sampleFromSeq'
-        trial = 1
-        while( trial <= sampleLim ):
-            testKey = choice( sampleFromSeq )
-            if self[ testKey ] == 0:
-                return testKey
-            trial += 1
-        return None
     
 class Stack(list): 
     """ LIFO container based on 'list' """    
@@ -378,24 +343,37 @@ class RollingList( list ):
     def __init__( self , winLen , *args ):
         """ Normal 'list' init """
         list.__init__( self , [ 0 for i in range( winLen ) ] , *args )
+        self.limit = winLen
+
+    def trim_front( self ):
+        """ Drop leading elements until the length condition is met """
+        while len( self ) > self.limit:
+            del self[0]
+
+    def trim_back( self ):
+        """ Drop trailing elements until the length condition is met """
+        while len( self ) > self.limit:
+            del self[-1]
 
     def append( self , item ):
         """ Append an item to the back of the list """
         list.append( self , item )
-        del self[0]
+        self.trim_front()
 
     def prepend( self , item ):
         """ Prepend an item to the front of the list """
         self.insert( 0 , item )
-        del self[-1]
+        self.trim_back()
+
+    def extend( self , addedList ):
+        """ Extend the list and enforce limits """
+        list.extend( self , addedList )
+        self.trim_front()
 
     def get_average( self ):
-        """ Get the rolling average , NOTE: Calling this function after inserting non-numeric or non-scalar elements will result in an error """
+        """ Get the rolling average """
+        # NOTE: Calling this function after inserting non-numeric or non-scalar elements will result in an error
         return sum( self ) * 1.0 / len( self )
-
-    def item_list( self ):
-        """ Return a copy of the RollingList as a list """
-        return self[:]   
 
 # ___ END CONTAINER CLASS ____________________________________________________________________________________________________________
 
@@ -439,49 +417,167 @@ def elemw( iterable , i ):
 # ___ END ITERABLE ___________________________________________________________________________________________________________________
 
 
-# === Timing / Benchmarking ============================================================================================
+# === Hash/Dict Structures =============================================================================================
 
-class HeartRate: # NOTE: This fulfills a purpose similar to the rospy rate
-    """ Sleeps for a time such that the period between calls to sleep results in a frequency not greater than the specified 'Hz' """
+def assoc_lists( keys , values ):
+    """ Return a dictionary with associated 'keys' and 'values' """
+    return dict( zip( keys , values ) )
     
-    def __init__( self , Hz ):
-        """ Create a rate object with a Do-Not-Exceed frequency in 'Hz' """
-        self.period = 1.0 / Hz; # Set the period as the inverse of the frequency , hearbeat will not exceed 'Hz' , but can be lower
-        self.last = time.time()
-    
-    def sleep( self ):
-        """ Sleep for a time so that the frequency is not exceeded """
-        elapsed = time.time() - self.last
-        if elapsed < self.period:
-            time.sleep( self.period - elapsed )
-        self.last = time.time()
+class Counter( dict ): 
+    """ The counter object acts as a dict, but sets previously unused keys to 0 , in the style of CS 6300 @ U of Utah """
 
-class Stopwatch( object ):
-    """ Timer for benchmarking """
+    def __init__( self , *args , **kw ):
+        """ Standard dict init """
+        dict.__init__( self , *args , **kw )
+        if "default" in kw:
+            self.defaultReturn = kw['default']
+        else:
+            self.defaultReturn = 0
+
+    def set_default( self , val ):
+        """ Set a new default value to return when there is no """
+        self.defaultReturn = val
+
+    def __getitem__( self , a ):
+        """ Get the val with key , otherwise return 0 if key DNE """
+        if a in self: 
+            return dict.__getitem__( self , a )
+        return 0
+
+    # __setitem__ provided by 'dict'
+
+    def sorted_keyVals( self ):
+        """ Return a list of sorted key-value tuples """
+        sortedItems = self.items()
+        sortedItems.sort( cmp = lambda keyVal1 , keyVal2 :  np.sign( keyVal2[1] - keyVal1[1] ) )
+        return sortedItems
+    
+    def unroll_to_lists( self ):
+        """ Return keys and values in associated pairs """
+        rtnKeys = list( self.keys() )
+        rtnVals = [ self[k] for k in rtnKeys ] # Positions must match, iterate over above list
+        return rtnKeys , rtnVals
+
+    def sample_until_unique( self , sampleFromSeq , sampleLim = int( 1e6 ) ):
+        """ Sample randomly from 'sampleFromSeq' with a uniform distribution until a new key is found or the trial limit is reached , return it """
+        # NOTE: If 'sampleLim' set to 'infty' , the result may be an infinite loop if the Counter has a key for each 'sampleFromSeq'
+        trial = 1
+        while( trial <= sampleLim ):
+            testKey = choice( sampleFromSeq )
+            if self[ testKey ] == 0:
+                return testKey
+            trial += 1
+        return None
+
+# ___ End Hash/Dict ____________________________________________________________________________________________________
+
+
+# === System Helpers ===================================================================================================
+
+def confirm_or_crash( msg = "Text to Crash, Empty to Continue: " ):
+    """ If the input is anything other than empty, then Crash the program """
+    crash = raw_input( msg )
+    if len( crash ):
+        exit()
+        
+# = class LogMH =
+
+class LogMH:
+    """ Text buffer object to hold script output, with facilities to write contents """
 
     def __init__( self ):
-        """ Init with watch started """
-        self.strtTime = time.time()
-        self.stopTime = infty
+        """ String to store logs """
+        self.totalStr = ""
 
-    def start( self ):
-        self.strtTime = time.time()
+    def prnt( self , *args ):
+        """ Print args and store them in a string """
+        for arg in args:
+            self.totalStr += ascii( arg ) + " "
+            print( ascii( arg ) , end=" " )
+        print
+        self.totalStr += endl
 
-    def stop( self ):
-        self.stopTime = time.time()
+    def sep( self , title = "" , width = 6 , char = '=' , strOut = False ):
+        """ Print a separating title card for debug """
+        LINE = width * char
+        self.prnt( LINE + ' ' + title + ' ' + LINE )
+        if strOut:
+            return LINE + ' ' + title + ' ' + LINE
 
-    def duration( self ):
-        return self.stopTime - self.strtTime
+    def write( self , *args ):
+        """ Store 'args' in the accumulation string without printing """
+        numArgs = len( args )
+        for i , arg in enumerate( args ):
+            self.totalStr += ascii( arg ) + ( " " if i < numArgs-1 else "" )
 
-    def elapsed( self ):
-        return time.time() - self.strtTime    
+    def out_and_clear( self , outPath ):
+        """ Write the contents of 'totalStr' to a file and clear """
+        outFile = file( outPath , 'w' )
+        outFile.write( self.totalStr )
+        outFile.close()
+        self.clear()
 
-# ___ End Timing ___________________________________________________________________________________________________________________________
+    def clear( self ):
+        """ Clear the contents of 'accum.totalStr' """
+        self.totalStr = ""
+
+# _ End LogMH _
+
+def parse_args( argList ):
+    """ Parse a dictionary of terminal parameters and their arguments """
+    # NOTE: This function assumes that each terminal parameter begins with a dash "-param"
+    # NOTE: This function assumes that a terminal argument follows the parameter that it must be assigned to,
+    #       and that no parameters begin with a dash
+    
+    def parse_arg( arg ):
+        """ Attempt to parse the argument as a float, int, or string; in that order """
+        rtnVal = None
+        try:
+            rtnVal = int( arg )
+        except ValueError:
+            try:
+                rtnVal = float( arg )
+            except ValueError:
+                rtnVal = str( arg )
+        return rtnVal
+    
+    stashedParam = ''
+    argLookup    = {}
+    argLen       = len( argList )
+    # 1. For each item
+    for i , arg_i in enumerate( argList ):
+        # 2. If it is a parameter
+        if arg_i[0] == '-':
+            # 3. If there is a previously stashed parameter, then assign it the value of `True` -OR-
+            if stashedParam:
+                argLookup[ stashedParam ] = True
+            # 4. If we are at the end of the list, then assign the current parameter the value of `True`
+            if i+1 == argLen:
+                argLookup[ arg_i  ] = True
+            # 5. Stash the current parameter name
+            stashedParam = arg_i
+        # 6. Else it is an argument
+        else:
+            # 7. If there is a parameter stashed, then parse it and assign the argument to the parameter
+            if stashedParam:
+                argLookup[ stashedParam ] = parse_arg( arg_i )
+                stashedParam = ''
+            # 8. Else, ignore the argument
+            else:
+                pass
+    # 9. Return
+    return argLookup
+
+# ___ End System _______________________________________________________________________________________________________
+
+
+
 
 
 # === Testing ==============================================================================================================================
 
 if __name__ == "__main__":
     pass
+
 
 # ___ End Tests ____________________________________________________________________________________________________________________________

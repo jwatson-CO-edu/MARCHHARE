@@ -37,7 +37,7 @@ Useful functions for plotting, mostly in matplotlib
 # ~ Special Libraries ~
 import numpy as np
 import matplotlib
-matplotlib.use('Qt4Agg') # Not even sure what this is for
+# matplotlib.use('Qt4Agg') # Not even sure what this is for
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d, Axes3D 
 
@@ -103,7 +103,7 @@ def plot_axes_3D_mpl(plotAX, scale = 1):
     plotAX.plot( [0,0    ] , [0,scale] , [0,0    ] , c='g')
     plotAX.plot( [0,0    ] , [0,0    ] , [0,scale] , c='b')
     
-def plot_bases_3D_mpl( plotAX , origin , bX , bY , bZ , scale , labelNum = None ): 
+def plot_bases_3D_mpl( plotAX , origin , bX , bY , bZ , scale , labelNum = None , labelStr = None ): 
     """ Display the supplied axes in standard XYZ-RGB on a matplotlib 3D projection, each vector 'scale' in length """
     # NOTE: This function assumes that 'axes' has already been set up as a 3D projection subplot
     # NOTE: This function does not perform any checks whatsoever on the orthogonality or length of bX, bY, bZ
@@ -118,39 +118,63 @@ def plot_bases_3D_mpl( plotAX , origin , bX , bY , bZ , scale , labelNum = None 
     plotAX.plot( Xs, Ys, Zs , c='g')
     Xs, Ys, Zs = split_to_components( [ origin , zVec ] )
     plotAX.plot( Xs, Ys, Zs , c='b')
-    if labelNum != None:
+    if  ( labelNum != None )  or  ( labelStr != None ):
+        if labelNum != None:
+            subScript = str(labelNum)
+        else:
+            subScript = str(labelStr)
         xLoc = np.multiply( xVec , 1.1 )
         yLoc = np.multiply( yVec , 1.1 )
         zLoc = np.multiply( zVec , 1.1 )
-        plotAX.text( xLoc[0] , xLoc[1] , xLoc[2] , "x_" + str(labelNum) , tuple(xVec) )
-        plotAX.text( yLoc[0] , yLoc[1] , yLoc[2] , "y_" + str(labelNum) , tuple(yVec) )
-        plotAX.text( zLoc[0] , zLoc[1] , zLoc[2] , "z_" + str(labelNum) , tuple(zVec) )
+        plotAX.text( xLoc[0] , xLoc[1] , xLoc[2] , "x_" + subScript , tuple(xVec) )
+        plotAX.text( yLoc[0] , yLoc[1] , yLoc[2] , "y_" + subScript , tuple(yVec) )
+        plotAX.text( zLoc[0] , zLoc[1] , zLoc[2] , "z_" + subScript , tuple(zVec) )
+ 
+def apply_homog( homogMat , vec3 ):
+    """ Apply a homogeneous transformation to a 3D vector """
+    print( "homogMat:\n" , homogMat , "vec3:" , vec3 )
+    rtnVec = ( np.dot( homogMat , [ vec3[0] , vec3[1] , vec3[2] , 0.0 ] ) )
+    #rtnVec = ( np.dot( homogMat , np.array( [ [vec3[0]] , [vec3[1]] , [vec3[2]] , [1.0] ] ) ) )
+    print( "rtnVec:" , rtnVec )
+    return rtnVec[:3]
     
-def plot_pose_axes_mpl( plotAX , vecPose , scale , labelNum = None ):
+def get_basis_vectors_for_xform( xform ):
+    """ Return the basis vector for the transformation """
+    xBasis = apply_homog( xform , [1,0,0] )
+    yBasis = apply_homog( xform , [0,1,0] )
+    zBasis = apply_homog( xform , [0,0,1] )
+    return xBasis , yBasis , zBasis    
+ 
+def get_position( xform ):
+    """ Set the translation portion of the `xform` to `pos` """
+    return [ xform[0,3] , xform[1,3] , xform[2,3] ]
+    
+def plot_pose_axes_mpl( plotAX , homogPose , scale , labelNum = None , labelStr = None ):
     """ Represent a Vector.Pose as 3D bases in a plot """
+    xBasis , yBasis , zBasis = get_basis_vectors_for_xform( homogPose )
+    print( xBasis , yBasis , zBasis )
     plot_bases_3D_mpl(plotAX, 
-                      vecPose.position, 
-                      vecPose.orientation.apply_to( [ 1.0 , 0.0 , 0.0 ] ), 
-                      vecPose.orientation.apply_to( [ 0.0 , 1.0 , 0.0 ] ), 
-                      vecPose.orientation.apply_to( [ 0.0 , 0.0 , 1.0 ] ), 
+                      get_position( homogPose ) , 
+                      xBasis , yBasis , zBasis, 
                       scale,
-                      labelNum)
+                      labelNum,
+                      labelStr)
 
 # == Figure Create / Destroy ==
 
 def fig_num(): fig_num.num += 1 ; return fig_num.num # Functor to increment and return figure number with each call
 fig_num.num = 0
  
-def fig_3d():
+def fig_3d( dims_in = [ 6.4 , 4.8 ] ):
     """ Create a new 3D figure and return handles to figure and axes """
     # USAGE: fig , ax = fig_3d()
-    fig = plt.figure( fig_num() )
+    fig = plt.figure( num = fig_num() , figsize = dims_in )
     ax = fig.add_subplot( 111 , projection = '3d' )
     return fig , ax
     
 def show_3d():
     """ Show all the 3D figures, should only be called once per program """
-    plt.axis('equal')
+    #plt.axis('equal')
     plt.show()
 
 def fig_2d():
@@ -260,6 +284,18 @@ def ipy_set_plots_interactive( allowRotate ):
         get_ipython().magic( 'matplotlib inline' ) # Static plots
 
 # __ End Jupyter __
+
+if __name__ == "__main__":
+    fg , ax = fig_3d()
+    plot_axes_3D_mpl( ax , scale = 2 )
+    pose = np.array(  
+        [ [ 1, 0, 0, 1 ] ,
+          [ 0, 1, 0, 1 ] ,
+          [ 0, 0, 1, 1 ] ,
+          [ 0, 0, 0, 1 ] ]
+    )
+    plot_pose_axes_mpl( ax , pose , 2 , labelNum = 1 )
+    show_3d()
         
 # === SPARE PARTS ==========================================================================================================================
         

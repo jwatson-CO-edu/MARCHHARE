@@ -14,7 +14,7 @@ Math helper functions including: { trigonometry , statistics }
 # ~~ Imports ~~
 # ~ Standard ~
 import os , operator
-from random import random
+from random import random, choices, shuffle
 from math import sqrt , sin , cos , tan , atan2 , asin , acos , atan , degrees , radians , factorial , pi , modf
 # ~ Special ~
 import numpy as np
@@ -260,11 +260,12 @@ def flip_weighted( truProb ):
     """ Return True with probability 'truProb' , Otherwise return False """
     return random() <= truProb
 
-def normalize_die( distribution ): 
+def odds_to_normalized_die( odds ): 
     """ Given relative odds, return partitions of a distribution on a number line from 0 to 1 """
+    # NOTE: Formerly `normalize_die`
     # This function assumes that all numbers in the distribution are positive
-    total = sum( distribution ) # get the sum of all items
-    normed = [ prob / total for prob in distribution ] # normalize the distribution
+    total = sum( odds ) # get the sum of all items
+    normed = [ prob / total for prob in odds ] # normalize the distribution
     accum = 0 # current partition boundary
     die = [] # monotonically increasing partitions for a dice roll
     for prob in normed: # Accumulate the total probability of sampling lesser than or equal to the partition
@@ -279,6 +280,10 @@ def roll_die( distribution ):
     while distribution[i] < sample and i < len( distribution ): # while sample is greater than or equal to partition
         i += 1 # advance partition
     return i # This is the index of the least partition greater than the sample
+
+def roll_odds( odds ):
+    """ Take in a set of relative odds, transform into a distribution, then sample from that distribution """
+    return roll_die( odds_to_normalized_die( odds ) )
     
 def named_odds_to_distribution( oddsDict ):
     """ Unspool the 'oddsDict' into a pairing of ordered names and odds , then normalize the odds into a probability distribution """
@@ -298,6 +303,15 @@ def sample_unfrm_real( rMin , rMax ):
     """ Sample from a uniform distribution [ rMin , rMax ) """
     span = abs( rMax - rMin )
     return random() * span + rMin
+
+def draw_choices( lst , k = 1 , replace = 0 ):
+    """ Draw `k` samples from `lst`, with or without replacement """
+    cpy = lst[:]
+    if not replace:
+        shuffle( cpy )
+        return cpy[:k]
+    else:
+        return choices( lst , k = k )
 
 # _ End Rolls _
 
