@@ -116,13 +116,24 @@ def pos_from_xform( xform ):
 
 def get_basis_vectors_for_xform( xform ):
     """ Return the basis vector for the transformation """
-    xBasis = apply_homog( xform , [1,0,0] )
-    yBasis = apply_homog( xform , [0,1,0] )
-    zBasis = apply_homog( xform , [0,0,1] )
+    xBasis = xform[0:3,0] #apply_homog( xform , [1,0,0] )
+    yBasis = xform[0:3,1] #apply_homog( xform , [0,1,0] )
+    zBasis = xform[0:3,2] #apply_homog( xform , [0,0,1] )
     return xBasis , yBasis , zBasis
 
 def set_position( xform , pos ):
     """ Set the translation portion of the `xform` to `pos` """
     xform[0:3,3] = pos[:]
+    
+def pose_from_position_bases( position , xBasis , yBasis , zBasis ):
+    """ Construct a pose from a position and three basis vectors """
+    rtnPose = np.eye(4)
+    # 1. Assign position
+    rtnPose[0:3,3] = position[:3]
+    # 2. Assign the bases
+    for i , basis in enumerate( [ xBasis , yBasis , zBasis ] ):
+        rtnPose[0:3,i] = basis[:3]
+    # 3. Return
+    return rtnPose    
         
 # __ End Homogeneous __
