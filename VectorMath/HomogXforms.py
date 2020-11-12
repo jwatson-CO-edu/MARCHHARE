@@ -134,6 +134,14 @@ def pose_from_position_bases( position , xBasis , yBasis , zBasis ):
     for i , basis in enumerate( [ xBasis , yBasis , zBasis ] ):
         rtnPose[0:3,i] = basis[:3]
     # 3. Return
-    return rtnPose    
+    return rtnPose
+
+def position_bases_from_pose( xform ):
+    """ Extract the position and basis vectors from the pose """
+    positn = np.zeros(3);  positn = xform[0:3,3]
+    xBasis = np.zeros(3);  xBasis = xform[0:3,0]
+    yBasis = np.zeros(3);  yBasis = xform[0:3,1]
+    zBasis = np.zeros(3);  zBasis = xform[0:3,2]
+    return positn , xBasis , yBasis , zBasis
         
 # __ End Homogeneous __
