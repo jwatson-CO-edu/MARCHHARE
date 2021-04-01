@@ -33,6 +33,7 @@ def install_constants():
         builtins.piHalf  = pi/2
         print( "Constants now available in `builtins`" )
 
+
 def test_constants():
     """ Test if the standard MARCHHARE constants have been loaded """
     try:
@@ -46,6 +47,7 @@ def test_constants():
         return False
 
 
+### Load Useful Constants ###
 if _AUTOLOAD_CONST:
     install_constants()
     assert test_constants() , "MARCHHARE constants FAILED to load!"
