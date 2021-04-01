@@ -1,8 +1,14 @@
 ########## INIT ###################################################################################
+import json
 import numpy as np
 
 
 ########## Data Retrieval #########################################################################
+
+
+def npy_to_array( path, dtype = 'float' ):
+    """ Return the NPY file as an array """
+    return np.array( np.load( path ) ).astype( dtype = dtype )
 
 
 def json_from_file( path ):

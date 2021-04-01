@@ -11,7 +11,7 @@ General Helper functions
 
 # ~~~ Imports ~~~
 # ~~ Standard ~~
-import os , builtins , operator , time
+import os , builtins , operator
 from math import pi , sqrt
 # ~~ Special ~~
 import numpy as np
@@ -102,11 +102,6 @@ def ensure_dir( dirName , gracefulErr = 1 ):
             else:
                 raise IOError( "ensure_dir: Could not create" + str( dirName ) + '\n' + str( err ) )
                 
-                
-def npy_to_array( path, dtype = 'float' ):
-    """ Return the NPY file as an array """
-    return np.array( np.load( path ) ).astype( dtype = dtype )
-
 
 def listpaths( srcDir ):
     """ Return all the names in `srcDir` as full paths """
